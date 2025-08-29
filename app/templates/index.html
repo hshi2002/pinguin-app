@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pinguin – Host Pinger</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🐧 Pinguin</h1>
+      <p class="subtitle">Add hosts to ping at custom intervals. Cards update live.</p>
+
+      <form id="add-form">
+        <input name="name" placeholder="Display name" required />
+        <input name="host" placeholder="IP or hostname" required />
+        <input name="interval" type="number" min="1" value="30" />
+        <button type="submit">Add</button>
+      </form>
+
+      <div id="cards" class="cards"></div>
+    </div>
+
+    <script>
+      async function fetchObjects() {
+        const res = await fetch('/api/objects');
+        const items = await res.json();
+        const cards = document.getElementById('cards');
+        cards.innerHTML = '';
+        items.forEach(i => {
+          const status = i.last_status || 'unknown';
+          const color = status === 'up' ? 'green' : (status === 'down' ? 'red' : 'gray');
+          const last = i.last_checked ? new Date(i.last_checked).toLocaleString() : '—';
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="dot ${color}"></div>
+            <div class="info">
+              <div class="name">${i.name}</div>
+              <div class="host">${i.host}</div>
+              <div class="meta">interval: ${i.interval}s • last: ${last}</div>
+            </div>
+            <button class="delete" data-host="${i.host}">✕</button>
+          `;
+          cards.appendChild(card);
+        });
+        document.querySelectorAll('.delete').forEach(btn => {
+          btn.onclick = async () => {
+            await fetch(`/api/objects/${btn.dataset.host}`, { method: 'DELETE' });
+            fetchObjects();
+          }
+        })
+      }
+
+      document.getElementById('add-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = Object.fromEntries(fd.entries());
+        payload.interval = Number(payload.interval || 30);
+        await fetch('/api/objects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        e.target.reset();
+        fetchObjects();
+      });
+
+      fetchObjects();
+      setInterval(fetchObjects, 2000);
+    </script>
+  </body>
+</html>

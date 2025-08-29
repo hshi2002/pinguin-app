@@ -1,0 +1,61 @@
+version: "3.9"
+
+name: pinguin
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: pinguin-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-pinguin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-pinguinpass}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-pinguin}
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - pinguin
+
+  app:
+    build: ./app
+    container_name: pinguin-app
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      SECRET_KEY: ${SECRET_KEY:-devkey}
+      MONGO_URI: mongodb://pinguin:${MONGO_INITDB_ROOT_PASSWORD:-pinguinpass}@mongo:27017/${MONGO_INITDB_DATABASE:-pinguin}?authSource=admin
+    depends_on:
+      - mongo
+    networks:
+      - pinguin
+
+  worker:
+    build: ./app
+    container_name: pinguin-worker
+    restart: unless-stopped
+    command: ["python", "worker.py"]
+    environment:
+      MONGO_URI: mongodb://pinguin:${MONGO_INITDB_ROOT_PASSWORD:-pinguinpass}@mongo:27017/${MONGO_INITDB_DATABASE:-pinguin}?authSource=admin
+    depends_on:
+      - mongo
+    networks:
+      - pinguin
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: pinguin-nginx
+    depends_on:
+      - app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - pinguin
+
+volumes:
+  mongo_data:
+
+networks:
+  pinguin:
