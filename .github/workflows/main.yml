@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. Run unit tests (placeholder for now)
+      # 4. Run unit tests (app & worker)
       - name: Run unit tests
         run: |
           echo "✅ Running simple unit tests"
@@ -47,21 +47,18 @@ jobs:
           docker build -t pinguin:test ./pinguin/app
 
       # 6. Run docker-compose for integration tests
-      - name: Run integration tests
+      - name: API endpoint testing
         run: |
-          docker compose -f pinguin/docker-compose.yml up -d --build
-          sleep 20
-          curl -f http://localhost:5000 || (docker compose -f pinguin/docker-compose.yml logs && exit 1)
-          docker compose -f pinguin/docker-compose.yml down
+          sleep 10  # give services time to boot
+          curl -f http://localhost:5000/ || exit 1
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"ip": "127.0.0.1"}' \
+            http://localhost:5000/add || exit 1
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: docker
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Remove testing environment
+        run: docker compose -f docker-compose.test.yml down
 
-      # 7. Authenticate to AWS
+      # 9. Authenticate to AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -69,18 +66,33 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      # 8. Login to Amazon ECR
+      # 7. Login to Amazon ECR
       - name: Login to Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 9. Build, tag, and push image
+      # 8. Build, tag, and push image
       - name: Build, tag, and push
         run: |
-          IMAGE_URI=${{ steps.ecr.outputs.registry }}/portfolio/pinguin:${{ github.sha }}
+          IMAGE_URI=${{ secrets.ECR_REPO_URI }}:${{ github.sha }}
           docker build -t $IMAGE_URI ./pinguin/app
           docker push $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: package-e2e-publish
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 9. Authenticate to AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
       # 10. Deploy to K8S
       - name: Update K8S deployment
