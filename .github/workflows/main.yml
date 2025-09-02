@@ -46,14 +46,20 @@ jobs:
         run: |
           docker build -t pinguin:test ./app
 
+      # 6. Set up testing environment
+      - name: Set up testing environment
+        run: |
+          docker compose -f docker-compose.yml up -d --build
+
       # 6. Run docker-compose for integration tests
       - name: API endpoint testing
         run: |
           sleep 10  # give services time to boot
           curl -f http://localhost:5000/ || exit 1
-          curl -X POST -H "Content-Type: application/json" \
-            -d '{"ip": "127.0.0.1"}' \
-            http://localhost:5000/add || exit 1
+          curl -X POST http://localhost:5000/api/objects \
+            -H "Content-Type: application/json" \
+            -d '{"name":"server1","host":"192.168.1.1","interval":45}'
+            || exit 1
 
       - name: Remove testing environment
         run: docker compose -f docker-compose.test.yml down
