@@ -44,8 +44,7 @@ jobs:
       # 5. Build docker image
       - name: Build Docker image
         run: |
-          echo $pwd
-          docker build -t pinguin:test .
+          docker build -t pinguin:test ./app
 
       # 6. Run docker-compose for integration tests
       - name: API endpoint testing
