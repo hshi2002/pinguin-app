@@ -22,7 +22,7 @@ jobs:
 
       # 3. Install dependencies
       - name: Install dependencies
-        working-directory: ./pinguin/app
+        working-directory: .
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
