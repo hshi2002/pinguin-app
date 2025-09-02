@@ -44,7 +44,7 @@ jobs:
       # 5. Build docker image
       - name: Build Docker image
         run: |
-          echo pwd
+          echo $pwd
           docker build -t pinguin:test .
 
       # 6. Run docker-compose for integration tests
