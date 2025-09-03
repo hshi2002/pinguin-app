@@ -80,7 +80,7 @@ jobs:
       - name: Build, tag, and push
         run: |
           IMAGE_URI=${{ secrets.ECR_REPO_URI }}:${{ github.sha }}
-          docker build -t $IMAGE_URI ./pinguin/app
+          docker build -t $IMAGE_URI ./app
           docker push $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
