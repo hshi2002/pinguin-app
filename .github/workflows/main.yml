@@ -49,7 +49,7 @@ jobs:
       # 6. Set up testing environment
       - name: Set up testing environment
         run: |
-          docker compose -f docker-compose.yml up -d --build
+          docker compose up -d --build
 
       # 6. Run docker-compose for integration tests
       - name: API endpoint testing
@@ -61,7 +61,7 @@ jobs:
             -d '{"name":"server1","host":"192.168.1.1","interval":45}' || exit 1
 
       - name: Remove testing environment
-        run: docker compose -f docker-compose.test.yml down
+        run: docker compose down
 
       # 9. Authenticate to AWS
       - name: Configure AWS credentials
