@@ -58,8 +58,7 @@ jobs:
           curl -f http://localhost:8080/ || exit 1
           curl -X POST http://localhost:8080/api/objects \
             -H "Content-Type: application/json" \
-            -d '{"name":"server1","host":"192.168.1.1","interval":45}'
-            || exit 1
+            -d '{"name":"server1","host":"192.168.1.1","interval":45}' || exit 1
 
       - name: Remove testing environment
         run: docker compose -f docker-compose.test.yml down
