@@ -89,11 +89,11 @@ jobs:
     needs: package-e2e-publish
     steps:
       
-      # Checkout infra repo to get K8s manifests
       - name: Checkout infra repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.INFRA_GIT_REPO }}
+          repository: hshi2002/pinguin-infra
+          token: ${{ secrets.GH_PAT }}
           path: pinguin-infra
 
       - name: Configure AWS credentials
